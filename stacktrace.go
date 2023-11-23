@@ -99,17 +99,17 @@ func newStacktrace(span string) *stacktrace {
 		file = removeGoPath(file)
 
 		f := runtime.FuncForPC(pc)
-		// do not print current library's stacktrace
-		if f == nil || strings.HasPrefix(f.Name(), "github.com/xTransact/errx") {
+		if f == nil {
 			break
 		}
 		function := shortFuncName(f)
 
 		isGoPkg := len(runtime.GOROOT()) > 0 && strings.Contains(file, runtime.GOROOT()) // skip frames in GOROOT if it's set
+		isErrxPkg := isErrxPkg(file)                                                     // skip frames in this package
 		isExamplePkg := strings.Contains(file, packageNameExamples)                      // do not skip frames in this package examples
 		isTestPkg := strings.Contains(file, "_test.go")                                  // do not skip frames in tests
 
-		if !isGoPkg && (isExamplePkg || isTestPkg) {
+		if !isGoPkg && (!isErrxPkg || isExamplePkg || isTestPkg) {
 			frames = append(frames, stacktraceFrame{
 				pc:       pc,
 				file:     file,
@@ -141,6 +141,10 @@ func shortFuncName(f *runtime.Func) string {
 	shortName = strings.Replace(shortName, ")", "", 1)
 
 	return shortName
+}
+
+func isErrxPkg(file string) bool {
+	return strings.Contains(file, packageName) || strings.Contains(file, "github.com/x!transact/errx")
 }
 
 /*

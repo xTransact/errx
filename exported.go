@@ -2,18 +2,15 @@ package errx
 
 import (
 	"errors"
-	"fmt"
 )
 
 func New(message string) error {
-	return Errorf(message)
+	return newError(nil, message)
 }
 
 // Errorf formats an error and returns `errx.Error` object that satisfies `error`.
 func Errorf(format string, args ...any) error {
-	e := newError()
-	e.msg = fmt.Sprintf(format, args...)
-	return e
+	return newError(nil, format, args...)
 }
 
 // Wrap wraps an error into an `errx.Error` object that satisfies `error`
@@ -22,7 +19,7 @@ func Wrap(err error, msg string) error {
 		return nil
 	}
 
-	return Wrapf(err, msg)
+	return newError(err, msg)
 }
 
 // Wrapf wraps an error into an `errx.Error` object that satisfies `error` and formats an error message.
@@ -31,20 +28,7 @@ func Wrapf(err error, format string, args ...any) error {
 		return nil
 	}
 
-	e := newError()
-	e.err = err
-	e.msg = fmt.Sprintf(format, args...)
-	return e
-}
-
-// Parse parses an error into an `errx.Error`.
-func Parse(err error) error {
-	if err == nil {
-		return nil
-	}
-	e := newError()
-	e.err = err
-	return e
+	return newError(err, format, args...)
 }
 
 // Is reports whether any error in err's chain matches target.
@@ -80,4 +64,30 @@ func As(err error, target any) bool {
 // Otherwise, Unwrap returns nil.
 func Unwrap(err error) error {
 	return errors.Unwrap(err)
+}
+
+// Cause returns the underlying cause of the error, if possible.
+// An error value has a cause if it implements the following
+// interface:
+//
+//	type causer interface {
+//	    Cause() error
+//	}
+//
+// If the error does not implement Cause, the original error will
+// be returned. If the error is nil, nil will be returned without further
+// investigation.
+func Cause(err error) error {
+	type causer interface {
+		Cause() error
+	}
+
+	for err != nil {
+		cause, ok := err.(causer)
+		if !ok {
+			break
+		}
+		err = cause.Cause()
+	}
+	return err
 }

@@ -1,6 +1,87 @@
 # errx
 
-`errx` is a more modern and convenient error handling library, providing more user-friendly stack information:
+`errx` is a more modern and convenient error handling library, providing more user-friendly stacktrace:
+
+
+## Quick Start
+
+```go
+err := errx.New("oops: something wrong :(")
+err = errx.Wrap(err, "failed to do something")
+fmt.Printf("%+v\n", err)
+```
+
+
+## v2
+
+> v2 provides cleaner stacktrace.
+
+### Install
+
+```shell
+go get github.com/xTransact/errx/v2
+```
+
+### Example
+
+```go
+func a() error {
+	return errx.Wrap(b(), "a()")
+}
+
+func b() error {
+	return c()
+}
+
+func c() error {
+	return d()
+}
+
+func d() error {
+	return e()
+}
+
+func e() error {
+	return f()
+}
+
+func f() error {
+	return errx.Wrap(g(), "f()")
+}
+
+func g() error {
+	return fmt.Errorf("nil pointer dereference")
+}
+
+func main() {
+    err := a()
+    err = Wrapf(err, "internal server error: %s", "xBank")
+    fmt.Printf("%+v\n", err)
+}
+```
+
+Result:
+```text
+internal server error: xBank: a(): f(): nil pointer dereference
+  Thrown: f()
+    --- at /home/xbank/go/pkg/errx/errx_test.go:47 f()
+  Thrown: a()
+    --- at /home/xbank/go/pkg/errx/errx_test.go:27 a()
+  Thrown: internal server error: xBank
+    --- at /home/xbank/go/pkg/errx/errx_test.go:56 main()
+```
+
+
+## v1
+
+
+## Install
+
+```shell
+go get github.com/xTransact/errx
+```
+
+## Example
 
 ```text
 TestErrxWrap Failed: oops user: xBank: failed to check: xxx: something wrong.
@@ -18,18 +99,4 @@ Stacktrace:
     --- at /home/xbank/go/pkg/errx/errx_test.go:34 TestErrxWrap()
   Thrown: oops user: xBank
     --- at /home/xbank/go/pkg/errx/errx_test.go:35 TestErrxWrap()
-```
-
-## Install
-
-```shell
-go get github.com/xTransact/errx
-```
-
-## Quick Start
-
-```go
-err := errx.New("oops: something wrong :(")
-err = errx.Wrap(err, "failed to do something")
-fmt.Printf("%+v\n", err)
 ```

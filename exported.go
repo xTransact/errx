@@ -37,6 +37,16 @@ func Wrapf(err error, format string, args ...any) error {
 	return e
 }
 
+// Parse parses an error into an `errx.Error`.
+func Parse(err error) error {
+	if err == nil {
+		return nil
+	}
+	e := newError()
+	e.err = err
+	return e
+}
+
 // Is reports whether any error in err's chain matches target.
 //
 // The chain consists of err itself followed by the sequence of errors obtained by

@@ -31,6 +31,16 @@ func Wrapf(err error, format string, args ...any) error {
 	return newError(err, format, args...)
 }
 
+// WithStack annotates err with a stack trace at the point WithStack was called.
+// If err is nil, WithStack returns nil.
+func WithStack(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	return newError(err, "")
+}
+
 // Is reports whether any error in err's chain matches target.
 //
 // The chain consists of err itself followed by the sequence of errors obtained by

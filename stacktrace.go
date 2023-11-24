@@ -4,124 +4,44 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"sort"
 	"strings"
 )
 
-// /
-// / Inspired by palantir/stacktrace repo
-// / -> https://github.com/palantir/stacktrace/blob/master/stacktrace.go
-// / -> Apache 2.0 LICENSE
-// /
-
-type fake struct{}
-
-var (
-	StackTraceMaxDepth  int = 15
-	packageName             = reflect.TypeOf(fake{}).PkgPath()
-	packageNameExamples     = packageName + "/examples/"
-)
-
-type stacktraceFrame struct {
-	pc       uintptr
+type stacktrace struct {
 	file     string
 	function string
 	line     int
 }
 
-func (frame *stacktraceFrame) String() string {
-	currentFrame := fmt.Sprintf("%v:%v", frame.file, frame.line)
-	if frame.function != "" {
-		currentFrame = fmt.Sprintf("%v:%v %v()", frame.file, frame.line, frame.function)
+func newStacktrace() *stacktrace {
+	// Caller of newStacktrace is newError, New or Wrap, so user's code is 3 up.
+	pc, file, line, ok := runtime.Caller(3)
+	if !ok {
+		return nil
+	}
+	file = removeGoPath(file)
+
+	st := &stacktrace{
+		file: file,
+		line: line,
 	}
 
-	return currentFrame
-}
-
-type stacktrace struct {
-	span   string
-	frames []stacktraceFrame
-}
-
-func (st *stacktrace) Error() string {
-	return st.String("")
-}
-
-func (st *stacktrace) String(deepestFrame string) string {
-	var str string
-
-	newline := func() {
-		if str != "" && !strings.HasSuffix(str, "\n") {
-			str += "\n"
-		}
+	f := runtime.FuncForPC(pc)
+	if f == nil {
+		return nil
 	}
+	st.function = shortFuncName(f)
 
-	for _, frame := range st.frames {
-		if frame.file != "" {
-			currentFrame := frame.String()
-			if currentFrame == deepestFrame {
-				break
-			}
-
-			newline()
-			str += "  --- at " + currentFrame
-		}
-	}
-
-	return str
+	return st
 }
 
-func (st *stacktrace) Source() (string, []string) {
-	if len(st.frames) == 0 {
-		return "", []string{}
-	}
-
-	firstFrame := st.frames[0]
-
-	header := firstFrame.String()
-	body := getSourceFromFrame(firstFrame)
-
-	return header, body
-}
-
-func newStacktrace(span string) *stacktrace {
-	frames := []stacktraceFrame{}
-
-	// We loop until we have StackTraceMaxDepth frames or we run out of frames.
-	// Frames from this package are skipped.
-	for i := 0; len(frames) < StackTraceMaxDepth; i++ {
-		pc, file, line, ok := runtime.Caller(i)
-		if !ok {
-			break
-		}
-		file = removeGoPath(file)
-
-		f := runtime.FuncForPC(pc)
-		if f == nil {
-			break
-		}
-		function := shortFuncName(f)
-
-		isGoPkg := len(runtime.GOROOT()) > 0 && strings.Contains(file, runtime.GOROOT()) // skip frames in GOROOT if it's set
-		isErrxPkg := isErrxPkg(file)                                                     // skip frames in this package
-		isExamplePkg := strings.Contains(file, packageNameExamples)                      // do not skip frames in this package examples
-		isTestPkg := strings.Contains(file, "_test.go")                                  // do not skip frames in tests
-
-		if !isGoPkg && (!isErrxPkg || isExamplePkg || isTestPkg) {
-			frames = append(frames, stacktraceFrame{
-				pc:       pc,
-				file:     file,
-				function: function,
-				line:     line,
-			})
-		}
-	}
-
-	return &stacktrace{
-		span:   span,
-		frames: frames,
+func (s *stacktrace) String() string {
+	if s.function != "" {
+		return fmt.Sprintf("    --- at %v:%v %v()", s.file, s.line, s.function)
+	} else {
+		return fmt.Sprintf("    --- at %v:%v", s.file, s.line)
 	}
 }
 
@@ -141,10 +61,6 @@ func shortFuncName(f *runtime.Func) string {
 	shortName = strings.Replace(shortName, ")", "", 1)
 
 	return shortName
-}
-
-func isErrxPkg(file string) bool {
-	return strings.Contains(file, packageName) || strings.Contains(file, "github.com/x!transact/errx")
 }
 
 /*

@@ -56,6 +56,22 @@ func GetCode(err error) errcode.Code {
 	return errcode.DefaultCode
 }
 
+func GetMessage(err error) (bool, string) {
+	var x *xerr
+	if ok := As(err, &x); ok {
+		return true, x.msg
+	}
+	return false, ""
+}
+
+func GetCodeAndMessage(err error) (errcode.Code, string) {
+	var x *xerr
+	if ok := As(err, &x); ok {
+		return x.code, x.msg
+	}
+	return errcode.DefaultCode, ""
+}
+
 // Is reports whether any error in err's chain matches target.
 //
 // The chain consists of err itself followed by the sequence of errors obtained by

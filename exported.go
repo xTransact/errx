@@ -2,24 +2,26 @@ package errx
 
 import (
 	"errors"
+
+	"github.com/xTransact/errx/v3/errcode"
 )
 
 func New(message string) error {
-	return newError(nil, message)
+	return newError(nil, errcode.DefaultCode, message)
 }
 
 // Errorf formats an error and returns `errx.Error` object that satisfies `error`.
 func Errorf(format string, args ...any) error {
-	return newError(nil, format, args...)
+	return newError(nil, errcode.DefaultCode, format, args...)
 }
 
 // Wrap wraps an error into an `errx.Error` object that satisfies `error`
-func Wrap(err error, msg string) error {
+func Wrap(err error, message string) error {
 	if err == nil {
 		return nil
 	}
 
-	return newError(err, msg)
+	return newError(err, GetCode(err), message)
 }
 
 // Wrapf wraps an error into an `errx.Error` object that satisfies `error` and formats an error message.
@@ -28,7 +30,7 @@ func Wrapf(err error, format string, args ...any) error {
 		return nil
 	}
 
-	return newError(err, format, args...)
+	return newError(err, GetCode(err), format, args...)
 }
 
 // WithStack annotates err with a stack trace at the point WithStack was called.
@@ -38,7 +40,20 @@ func WithStack(err error) error {
 		return nil
 	}
 
-	return newError(err, "")
+	return newError(err, GetCode(err), "")
+}
+
+func WithCode(code errcode.Code) Builder {
+	err := newError(nil, code, "")
+	return Builder(*err)
+}
+
+func GetCode(err error) errcode.Code {
+	var x *xerr
+	if ok := As(err, &x); ok {
+		return x.code
+	}
+	return errcode.DefaultCode
 }
 
 // Is reports whether any error in err's chain matches target.

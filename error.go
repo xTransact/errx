@@ -5,19 +5,23 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	"github.com/xTransact/errx/v3/errcode"
 )
 
 var _ error = (*xerr)(nil)
 
 type xerr struct {
 	err        error
+	code       errcode.Code
 	msg        string
 	stacktrace *stacktrace
 }
 
-func newError(err error, format string, args ...any) *xerr {
+func newError(err error, code errcode.Code, format string, args ...any) *xerr {
 	return &xerr{
 		err:        err,
+		code:       code,
 		msg:        fmt.Sprintf(format, args...),
 		stacktrace: newStacktrace(),
 	}
@@ -34,6 +38,10 @@ func (e *xerr) Error() string {
 	}
 
 	return e.msg
+}
+
+func (e *xerr) Code() errcode.Code {
+	return e.code
 }
 
 func (e *xerr) Cause() error {
@@ -99,7 +107,13 @@ func (e *xerr) formatStacktrace() string {
 	})
 
 	slices.Reverse(rows)
-	rows = slices.Insert(rows, 0, e.Error())
+
+	first := e.Error()
+	if errcode.IsNotDefaultCode(e.code) {
+		first = e.code.String() + ": " + first
+	}
+
+	rows = slices.Insert(rows, 0, first)
 
 	return strings.Join(rows, "\n")
 }

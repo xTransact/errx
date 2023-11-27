@@ -11,6 +11,36 @@ err = errx.Wrap(err, "failed to do something")
 fmt.Printf("%+v\n", err)
 ```
 
+## v3
+
+> v3 supports `Error Code`
+
+### Install
+
+```shell
+go get github.com/xTransact/errx/v3
+```
+
+### Example
+
+```go
+err := errx.WithCode(errcode.InternalServerError).New("failed to do something")
+err = Wrap(err, "oops: :(")
+err = Wrapf(err, "xxxxxxx")
+fmt.Printf("%+v\n", err)
+```
+
+Result:
+```text
+500: Internal Server Error: xxxxxxx: oops: :(: failed to do something
+  Thrown: failed to do something
+    --- at /home/xbank/go/pkg/errx/errx_test.go:17 TestCode1()
+  Thrown: oops: :(
+    --- at /home/xbank/go/pkg/errx/errx_test.go:18 TestCode1()
+  Thrown: xxxxxxx
+    --- at /home/xbank/go/pkg/errx/errx_test.go:19 TestCode1()
+```
+
 
 ## v2
 

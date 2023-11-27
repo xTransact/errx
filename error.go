@@ -40,6 +40,10 @@ func (e *xerr) Cause() error {
 	return e.err
 }
 
+func (e *xerr) Unwrap() error {
+	return e.err
+}
+
 // Format implements fmt.Formatter.
 // If the format is "%+v", then the details of the error are included.
 // Otherwise, using "%v", just the summary is included.

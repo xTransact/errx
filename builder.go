@@ -28,6 +28,11 @@ func (b Builder) Wrapf(err error, format string, args ...any) error {
 	return b.Build()
 }
 
+func (b Builder) WithStack(err error) error {
+	b.err = err
+	return b.Build()
+}
+
 func (b Builder) Build() error {
 	err := xerr(b)
 	return &err

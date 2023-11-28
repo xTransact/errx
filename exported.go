@@ -2,6 +2,7 @@ package errx
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/xTransact/errx/v3/errcode"
 )
@@ -64,12 +65,54 @@ func GetMessage(err error) (bool, string) {
 	return false, ""
 }
 
+func GetChainedMessage(err error) string {
+	var e *xerr
+	ok := As(err, &e)
+	if !ok {
+		return ""
+	}
+
+	var msg []string
+	recursive(e, func(x *xerr) {
+		if strings.TrimSpace(x.msg) != "" {
+			msg = append(msg, x.msg)
+		}
+	})
+
+	return strings.Join(msg, ": ")
+}
+
 func GetCodeAndMessage(err error) (errcode.Code, string) {
 	var x *xerr
 	if ok := As(err, &x); ok {
 		return x.code, x.msg
 	}
 	return errcode.DefaultCode, ""
+}
+
+func NewInternalServerError() Builder {
+	err := newError(nil, errcode.InternalServerError, "")
+	return Builder(*err)
+}
+
+func NewBadRequestError() Builder {
+	err := newError(nil, errcode.BadRequest, "")
+	return Builder(*err)
+}
+
+func NewUnauthorizedError() Builder {
+	err := newError(nil, errcode.Unauthorized, "")
+	return Builder(*err)
+}
+
+func NewForbiddenError() Builder {
+	err := newError(nil, errcode.Forbidden, "")
+	return Builder(*err)
+}
+
+func NewNotFoundError() Builder {
+	err := newError(nil, errcode.NotFound, "")
+	return Builder(*err)
 }
 
 // Is reports whether any error in err's chain matches target.

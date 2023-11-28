@@ -82,14 +82,6 @@ func GetChainedMessage(err error) string {
 	return strings.Join(msg, ": ")
 }
 
-func GetCodeAndMessage(err error) (errcode.Code, string) {
-	var x *xerr
-	if ok := As(err, &x); ok {
-		return x.code, x.msg
-	}
-	return errcode.DefaultCode, ""
-}
-
 func NewInternalServerError() Builder {
 	err := newError(nil, errcode.InternalServerError, "")
 	return Builder(*err)

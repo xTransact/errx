@@ -24,7 +24,7 @@ go get github.com/xTransact/errx/v3
 ### Example
 
 ```go
-err := errx.WithCode(errcode.InternalServerError).New("failed to do something")
+err := errx.NewInternalServerError().New("failed to do something")
 err = Wrap(err, "oops: :(")
 err = Wrapf(err, "xxxxxxx")
 fmt.Printf("%+v\n", err)
